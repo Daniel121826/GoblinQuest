@@ -133,7 +133,7 @@ const GameRoom: React.FC = () => {
                 body: JSON.stringify({ messages: chatMessages })
             });
 
-            if (response.status === 429) {
+            if (response.status === 429 || response.status === 500) {
                 setQuotaError(true);
                 setIsTyping(false);
                 return; // Salimos de la función para no intentar procesar el JSON
@@ -368,8 +368,8 @@ const GameRoom: React.FC = () => {
                                     <h4 className="font-black uppercase text-xs tracking-tighter">Aviso del Master</h4>
                                 </div>
                                 <p className="text-sm italic leading-relaxed">
-                                    "Las brumas del destino se han vuelto demasiado densas para ver con claridad...
-                                    <strong> Debes tomarte un descanso</strong>."
+                                    "Te quedaste sin energía...
+                                    <strong> Debes tomarte un descanso y volver en un rato</strong>."
                                 </p>
                                 <button
                                     onClick={() => setQuotaError(false)}

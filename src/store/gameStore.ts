@@ -13,10 +13,12 @@ export interface Game {
     charName: string;
     charImage: string | null;
     health: number;
+    energy: number;
     messages: Message[];
     missions: string[];
     date: string;
     inventory : string[];
+    
 }
 
 interface GameState {

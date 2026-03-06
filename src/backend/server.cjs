@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const Groq = require('groq-sdk');
+const { default: e } = require('express');
 
 const groq = new Groq({ apiKey: process.env.AI_KEY }); 
 
@@ -204,6 +205,7 @@ const gameSchema = new mongoose.Schema({
     charName: String,
     charImage: String,
     health: { type: Number, default: 100 },
+    energy: { type: Number, default: 30 },
     messages: [{ role: String, content: String }],
     missions: [String],
     inventory: [String],
