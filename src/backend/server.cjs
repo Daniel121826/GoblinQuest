@@ -10,8 +10,8 @@ const groq = new Groq({ apiKey: process.env.AI_KEY });
 
 const app = express();
 app.use(cors({
-  origin: 'http://localhost:5173', // Tu puerto de Vite
-  allowedHeaders: ['Content-Type', 'Authorization'] // <--- ESTO ES CLAVE
+  origin: 'loquacious-narwhal-b7a102.netlify.app', // <--- LA URL QUE TE DIO NETLIFY
+  credentials: true
 }));
 // Aumentamos el límite para permitir las imágenes en Base64
 app.use(express.json({ limit: '10mb' }));
