@@ -258,14 +258,14 @@ const GameRoom: React.FC = () => {
             {/* Botón flotante para móvil - Movido a la izquierda (left-6) */}
             <button
                 onClick={() => setShowSidebar(!showSidebar)}
-                className="md:hidden fixed bottom-24 right-6 z-[60] bg-green-600 text-white p-4 rounded-full shadow-2xl border-2 border-green-400 active:scale-95 transition-all"
+                className="md:hidden fixed bottom-24 left-6 z-[60] bg-green-600 text-white p-4 rounded-full shadow-2xl border-2 border-green-400 active:scale-95 transition-all"
             >
                 {showSidebar ? '✕' : '👤'}
             </button>
 
             <div className="flex-1 flex overflow-hidden relative">
 
-                {/* SIDEBAR - Corregido para móvil: absolute inset-0 evita que se suba al navbar */}
+                {/* SIDEBAR */}
                 <aside className={`
                     ${showSidebar ? 'translate-x-0' : '-translate-x-full'} 
                     md:translate-x-0 md:static absolute inset-0 z-50 w-full md:w-1/3 
@@ -350,7 +350,8 @@ const GameRoom: React.FC = () => {
                     <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 md:p-10 space-y-6">
                         {game.messages.map((m, i) => (
                             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[85%] md:max-w-[75%] p-4 md:p-5 rounded-[1.5rem] text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-green-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'}`}>
+                                {/* FUENTE AGRANDADA AQUÍ: text-base md:text-lg */}
+                                <div className={`max-w-[85%] md:max-w-[75%] p-4 md:p-6 rounded-[1.5rem] text-base md:text-lg leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-green-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'}`}>
                                     {m.content}
                                 </div>
                             </div>
@@ -358,7 +359,7 @@ const GameRoom: React.FC = () => {
                         {isTyping && <div className="text-[10px] font-black text-green-600 animate-pulse ml-2">NARRANDO...</div>}
                     </div>
 
-                    {/* Mensaje de Error de Quota (Mantenido) */}
+                    {/* Aviso de Quota */}
                     {quotaError && (
                         <div className="p-4 md:p-6 bg-white border-t border-gray-100">
                             <div className="max-w-2xl mx-auto p-6 rounded-[1.5rem] bg-amber-50 border-2 border-amber-200 text-amber-900 shadow-md">
@@ -384,12 +385,32 @@ const GameRoom: React.FC = () => {
                         <div className="flex gap-3 md:gap-4 items-center max-w-6xl mx-auto">
                             <button
                                 onClick={() => handleSend(`Lanzamiento d20: ${Math.floor(Math.random() * 20) + 1}`)}
-                                className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center active:scale-90 transition-transform"
+                                className="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center 
+               group transition-all duration-300 ease-out
+               hover:scale-110 active:scale-90"
                             >
-                                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-lg">
-                                    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="#0f172a" stroke="#22c55e" strokeWidth="3" />
+                                {/* Efecto de resplandor de fondo al hacer hover */}
+                                <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full 
+                    opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                                <svg
+                                    viewBox="0 0 100 100"
+                                    className="absolute inset-0 w-full h-full drop-shadow-lg 
+                   transition-transform duration-500 group-hover:rotate-[15deg]"
+                                >
+                                    <polygon
+                                        points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5"
+                                        fill="#0f172a"
+                                        stroke="#22c55e"
+                                        strokeWidth="3"
+                                        className="transition-colors duration-300 group-hover:fill-[#162545] group-hover:stroke-green-400"
+                                    />
                                 </svg>
-                                <span className="relative z-10 text-green-500 font-black italic text-lg md:text-xl">20</span>
+
+                                <span className="relative z-10 text-green-500 font-black italic text-lg md:text-2xl 
+                     transition-all duration-300 group-hover:text-green-300 group-hover:scale-110">
+                                    20
+                                </span>
                             </button>
 
                             <input
