@@ -19,10 +19,10 @@ const Home: React.FC = () => {
     const [showLoginFromHero, setShowLoginFromHero] = useState(false);
 
     const rules: Rule[] = [
-        { title: "COHERENCIA NARRATIVA", desc: "La historia tiene prioridad sobre las tiradas. El objetivo es crear un arco épico." },
+        { title: "COHERENCIA NARRATIVA", desc: "La historia tiene prioridad sobre las tiradas. El objetivo es crear una historia basada en tu personaje." },
         { title: "RESOLUCIÓN JUSTA", desc: "Las decisiones se resuelven según el riesgo, la habilidad de tu personaje y el azar." },
         { title: "AGENCIA DEL JUGADOR", desc: "Tú tienes el control. La IA sugiere consecuencias, pero tú eliges el camino." },
-        { title: "MÁSTER IMPARCIAL", desc: "Nuestra IA actúa como un árbitro neutral, adaptándose a tu estilo de juego." }
+        { title: "MÁSTER IMPARCIAL", desc: "Nuestra IA actúa como un árbitro neutral, adaptándose a tu estilo de juego y sabiendolo todo sobre tu personaje." }
     ];
 
     const handleStartAdventure = () => {
@@ -80,7 +80,7 @@ const Home: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {rules.map((rule, index) => (
-                        <div key={index} className="bg-[#2d7a46] p-8 rounded-2xl shadow-xl hover:bg-[#358a52] transition-colors group">
+                        <div key={index} className="bg-[#2d7a46] p-8 rounded-2xl shadow-xl">
                             <h3 className="text-white font-bold text-lg mb-4 leading-none group-hover:text-green-200 transition-colors">
                                 {rule.title}
                             </h3>
@@ -92,9 +92,15 @@ const Home: React.FC = () => {
                 </div>
 
                 <div className="flex justify-center mt-16">
-                    <button className="bg-slate-900 text-white px-12 py-3 rounded-full hover:bg-black transition-all font-bold text-xs uppercase tracking-[0.3em] shadow-lg">
-                        Leer Manual Completo
-                    </button>
+                    <a
+                        href="https://codexarcana.org/wp-content/uploads/2020/02/reglas-b%C3%A1sicas-DD-5%C2%AA-0.7.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <button className="bg-[black] hover:bg-black/85 text-white px-10 py-4 rounded-md transition-all transform hover:scale-105 shadow-[0_10px_20px_rgba(0,0,0,0.3)] font-bold uppercase tracking-widest text-sm font-sans">
+                            Leer Manual Completo
+                        </button>
+                    </a>
                 </div>
             </section>
 
