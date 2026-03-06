@@ -40,6 +40,7 @@ const GameRoom: React.FC = () => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const hasStarted = useRef(false);
     const [quotaError, setQuotaError] = useState(false);
+    const [showSidebar, setShowSidebar] = useState(false);
 
     const game = games.find(g => g._id === gameId);
 
@@ -98,6 +99,7 @@ const GameRoom: React.FC = () => {
                     2. Siempre que el jugador realice una acción, debes interpretar qué atributo o pericia se aplicaría y pedir la tirada correspondiente.
                     3. Utiliza el trasfondo para personalizar el inicio. Si es un huérfano, empieza en un orfanato; si es un noble, en un banquete, etc.
                     4.Rolea como un NPC cuando el jugador interactúe con personajes del mundo
+                    5.Siempre que el jugador lance algo de su inventario o consiga un nuevo objeto, actualiza el inventario y narra la situación.
                     ESTADO:
                     - Salud: ${game.health}%
                     - Inventario: ${JSON.stringify(game.inventory)}
@@ -243,17 +245,33 @@ const GameRoom: React.FC = () => {
             <div className="h-screen bg-[#0a1a0f] flex items-center justify-center text-green-500 font-bold">
                 <div className="text-center">
                     <p className="animate-pulse uppercase tracking-widest">Sincronizando con el destino...</p>
-                    <p className="text-[10px] text-gray-500 mt-2">Cargando partida: {gameId}</p>
+                    <p className="text-[10px] text-gray-500 mt-2">Cargando partida...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="h-screen flex flex-col bg-[#0a1a0f]">
+        <div className="h-screen flex flex-col bg-[#0a1a0f] overflow-hidden">
             <Navbar />
-            <div className="flex-1 flex overflow-hidden">
-                <aside className="w-1/3 bg-[#0d2114] border-r border-green-900/30 overflow-y-auto p-8 text-white custom-scrollbar">
+
+            {/* Botón flotante - Movido a la IZQUIERDA (left-6) */}
+            <button
+                onClick={() => setShowSidebar(!showSidebar)}
+                className="md:hidden fixed bottom-24 right-6 z-[60] bg-green-600 text-white p-4 rounded-full shadow-2xl border-2 border-green-400 active:scale-95 transition-all"
+            >
+                {showSidebar ? '✕' : '👤'}
+            </button>
+
+            <div className="flex-1 flex overflow-hidden relative">
+
+                {/* SIDEBAR - Ajustado para que no se meta bajo el Navbar */}
+                <aside className={`
+                ${showSidebar ? 'translate-x-0' : '-translate-x-full'} 
+                md:translate-x-0 md:static absolute inset-0 z-50 w-full md:w-1/3 
+                bg-[#0d2114] border-r border-green-900/30 overflow-y-auto p-8 text-white 
+                custom-scrollbar transition-transform duration-300 ease-in-out
+            `}>
                     <div className="relative w-36 h-36 mx-auto mb-6">
                         <img src={character.image} className="w-full h-full object-cover rounded-[2rem] border-2 border-green-600 shadow-2xl" alt="Hero" />
                     </div>
@@ -261,6 +279,7 @@ const GameRoom: React.FC = () => {
                     <h2 className="text-2xl font-black uppercase text-center leading-none mb-1">{character.name}</h2>
                     <p className="text-center text-green-500 font-bold uppercase text-[8px] tracking-[0.3em] mb-6">{character.race} {character.charClass}</p>
 
+                    {/* Barra de Vida */}
                     <div className="mb-8">
                         <div className="flex justify-between text-[9px] font-black uppercase mb-2">
                             <span>Vitalidad</span>
@@ -271,6 +290,7 @@ const GameRoom: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Atributos */}
                     <div className="grid grid-cols-3 gap-2 mb-4">
                         {Object.entries(character.attributes).map(([attr, val]: any) => {
                             const total = val + (RACE_BONUSES[character.race]?.[attr] || 0);
@@ -283,6 +303,7 @@ const GameRoom: React.FC = () => {
                         })}
                     </div>
 
+                    {/* Pericias */}
                     <div className="mb-6">
                         <button onClick={() => setShowSkills(!showSkills)} className="w-full bg-green-950/30 border border-green-900/40 p-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-green-900/40 transition-all flex justify-between items-center">
                             <span>⚔️ Pericias</span>
@@ -307,27 +328,33 @@ const GameRoom: React.FC = () => {
                         <div className="bg-black/30 rounded-2xl p-4 border border-green-900/20">
                             <h3 className="text-[9px] font-black uppercase tracking-widest text-green-500 mb-3">📜 Misiones</h3>
                             <ul className="space-y-2 text-[11px] text-gray-300">
-                                {(game.missions || []).map((m: string, i: number) => (
-                                    <li key={i} className="flex gap-2"><span className="text-green-600">»</span> {m}</li>
+                                {(game.missions || []).map((m: any, i: number) => (
+                                    <li key={i} className="flex gap-2">
+                                        <span className="text-green-600">»</span>
+                                        {typeof m === 'object' ? (m.nombre || m.descripcion) : m}
+                                    </li>
                                 ))}
                             </ul>
                         </div>
                         <div className="bg-black/30 rounded-2xl p-4 border border-green-900/20">
                             <h3 className="text-[9px] font-black uppercase tracking-widest text-orange-500 mb-3">🎒 Inventario</h3>
                             <div className="flex flex-wrap gap-2">
-                                {(game.inventory || []).map((item: string, i: number) => (
-                                    <span key={i} className="bg-orange-950/30 border border-orange-900/30 px-2 py-1 rounded-md text-[10px] text-orange-200">{item}</span>
+                                {(game.inventory || []).map((item: any, i: number) => (
+                                    <span key={i} className="bg-orange-950/30 border border-orange-900/30 px-2 py-1 rounded-md text-[10px] text-orange-200">
+                                        {typeof item === 'object' ? (item.nombre || item.item) : item}
+                                    </span>
                                 ))}
                             </div>
                         </div>
                     </div>
                 </aside>
 
-                <section className="flex-1 flex flex-col bg-gray-50">
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-6">
+                {/* CHAT SECTION */}
+                <section className="flex-1 flex flex-col bg-gray-50 z-10 w-full">
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 md:p-10 space-y-6">
                         {game.messages.map((m, i) => (
                             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[75%] p-5 rounded-[1.5rem] text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-green-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'}`}>
+                                <div className={`max-w-[85%] md:max-w-[75%] p-4 md:p-5 rounded-[1.5rem] text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-green-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'}`}>
                                     {m.content}
                                 </div>
                             </div>
@@ -335,39 +362,17 @@ const GameRoom: React.FC = () => {
                         {isTyping && <div className="text-[10px] font-black text-green-600 animate-pulse ml-2">NARRANDO...</div>}
                     </div>
 
-                    {quotaError && (
-                        <div className="flex justify-start">
-                            <div className="max-w-[80%] p-6 rounded-[1.5rem] bg-amber-50 border-2 border-amber-200 text-amber-900 rounded-bl-none shadow-md">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-2xl">⏳</span>
-                                    <h4 className="font-black uppercase text-xs tracking-tighter">Aviso del Master</h4>
-                                </div>
-                                <p className="text-sm italic leading-relaxed">
-                                    "Las brumas del destino se han vuelto demasiado densas para ver con claridad.
-                                    Incluso los dioses necesitan reposar tras moldear el mundo.
-                                    <strong> Debes tomarte un descanso; el Master hará una pausa de unas horas </strong>
-                                    antes de que la aventura pueda continuar."
-                                </p>
-                                <button
-                                    onClick={() => setQuotaError(false)}
-                                    className="mt-4 text-[10px] font-bold uppercase text-amber-700 hover:underline"
-                                >
-                                    Entendido, esperaré.
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="p-6 bg-white border-t border-gray-100">
-                        <div className="flex gap-4 items-center">
+                    {/* Input y Dado */}
+                    <div className="p-4 md:p-6 bg-white border-t border-gray-100">
+                        <div className="flex gap-3 md:gap-4 items-center max-w-6xl mx-auto">
                             <button
                                 onClick={() => handleSend(`Lanzamiento d20: ${Math.floor(Math.random() * 20) + 1}`)}
-                                className="relative w-14 h-14 flex items-center justify-center active:scale-90 transition-transform"
+                                className="group relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center active:scale-90 transition-all duration-500 ease-out"
                             >
-                                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-lg">
-                                    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="#0f172a" stroke="#22c55e" strokeWidth="3" />
+                                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-lg transition-all duration-500 group-hover:rotate-[360deg] group-hover:drop-shadow-[0_0_15px_rgba(34,197,94,0.6)]">
+                                    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="#0f172a" stroke="#22c55e" strokeWidth="3" className="group-hover:fill-[#1a2e4b] transition-colors" />
                                 </svg>
-                                <span className="relative z-10 text-green-500 font-black italic text-xl">20</span>
+                                <span className="relative z-10 text-green-500 font-black italic text-lg md:text-xl group-hover:scale-110 transition-transform">20</span>
                             </button>
 
                             <input
@@ -375,10 +380,13 @@ const GameRoom: React.FC = () => {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                placeholder="Escribe tu acción..."
-                                className="flex-1 bg-gray-100 rounded-xl px-5 h-12 text-sm outline-none focus:ring-2 ring-green-500/20 transition-all"
+                                placeholder="¿Qué quieres hacer?"
+                                className="flex-1 bg-gray-100 rounded-xl px-4 md:px-5 h-12 text-sm outline-none focus:ring-2 ring-green-500/20 transition-all"
                             />
-                            <button onClick={() => handleSend()} className="bg-green-600 text-white px-8 h-12 rounded-xl text-xs font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-600/20">Enviar</button>
+                            <button onClick={() => handleSend()} className="bg-green-600 text-white px-4 md:px-8 h-12 rounded-xl text-xs font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-600/20">
+                                <span className="hidden md:inline">Enviar</span>
+                                <span className="md:hidden">➤</span>
+                            </button>
                         </div>
                     </div>
                 </section>
