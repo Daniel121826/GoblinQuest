@@ -10,7 +10,7 @@ const groq = new Groq({ apiKey: process.env.AI_KEY });
 
 const app = express();
 app.use(cors({
-  origin: 'goblinquest.netlify.app', // <--- LA URL QUE TE DIO NETLIFY
+  origin: 'https://goblinquest.netlify.app', // <--- LA URL QUE TE DIO NETLIFY
   credentials: true
 }));
 // Aumentamos el límite para permitir las imágenes en Base64
