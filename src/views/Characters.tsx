@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface Character {
     id: string;
@@ -22,7 +23,7 @@ const Characters: React.FC = () => {
     useEffect(() => {
         const fetchCharacters = async () => {
             if (!token) return;
-            const response = await fetch('http://localhost:5000/api/characters', {
+            const response = await fetch(`${API_URL}/api/characters`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -37,7 +38,7 @@ const Characters: React.FC = () => {
     const deleteCharacter = async (id: string) => {
         if (!window.confirm("¿Seguro que quieres borrar esta leyenda?")) return;
 
-        const response = await fetch(`http://localhost:5000/api/characters/${id}`, {
+        const response = await fetch(`${API_URL}/api/characters/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });

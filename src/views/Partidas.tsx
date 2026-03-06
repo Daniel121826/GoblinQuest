@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Partidas: React.FC = () => {
     const navigate = useNavigate();
@@ -38,7 +39,7 @@ const Partidas: React.FC = () => {
 
             setLoading(true);
             try {
-                const response = await fetch('http://localhost:5000/api/characters', {
+                const response = await fetch(`${API_URL}/api/characters`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${currentToken}`,
@@ -104,7 +105,7 @@ const Partidas: React.FC = () => {
 
         try {
             setLoading(true); // Reutilizamos el estado de carga para el feedback del botón
-            const response = await fetch('http://localhost:5000/api/games', {
+            const response = await fetch(`${API_URL}/api/games`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -147,7 +148,7 @@ const Partidas: React.FC = () => {
 
         try {
             // 3. Llamada al Backend
-            const response = await fetch(`http://localhost:5000/api/games/${gameId}`, {
+            const response = await fetch(`${API_URL}/api/games/${gameId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${currentToken}`

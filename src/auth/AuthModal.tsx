@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -32,8 +33,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         }
 
         const url = isLogin
-            ? 'http://localhost:5000/api/auth/login'
-            : 'http://localhost:5000/api/auth/register';
+            ? `${API_URL}/api/auth/login`
+            : `${API_URL}/api/auth/register`;
 
         try {
             const response = await fetch(url, {

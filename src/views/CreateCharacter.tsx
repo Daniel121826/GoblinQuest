@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const CLASSES = ['Guerrero', 'Paladín', 'Pícaro', 'Mago', 'Clérigo', 'Explorador', 'Bárbaro', 'Bardo', 'Hechicero', 'Druida'];
 
@@ -49,7 +50,7 @@ const CreateCharacter: React.FC = () => {
         const fetchCharacter = async () => {
             if (id && token) {
                 try {
-                    const response = await fetch(`http://localhost:5000/api/characters/${id}`, {
+                    const response = await fetch(`${API_URL}/api/characters/${id}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -104,7 +105,7 @@ const CreateCharacter: React.FC = () => {
         try {
             let response;
             if (id) {
-                response = await fetch(`http://localhost:5000/api/characters/${id}`, {
+                response = await fetch(`${API_URL}/api/characters/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -113,7 +114,7 @@ const CreateCharacter: React.FC = () => {
                     body: JSON.stringify(characterData)
                 });
             } else {
-                response = await fetch('http://localhost:5000/api/characters', {
+                response = await fetch(`${API_URL}/api/characters`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

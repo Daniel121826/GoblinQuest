@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useGameStore, type Message } from '../store/gameStore';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 
 const RACE_BONUSES: any = {
@@ -121,7 +122,7 @@ const GameRoom: React.FC = () => {
                 }))
             ];
 
-            const response = await fetch('http://localhost:5000/api/chat', {
+            const response = await fetch(`${API_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ const GameRoom: React.FC = () => {
 
             const token = getToken();
             if (token) {
-                await fetch(`http://localhost:5000/api/games/${gameId}`, {
+                await fetch(`${API_URL}/api/games/${gameId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -193,7 +194,7 @@ const GameRoom: React.FC = () => {
             }
 
             try {
-                const res = await fetch(`http://localhost:5000/api/characters/${game.charId}`, {
+                const res = await fetch(`${API_URL}/api/characters/${game.charId}`, {
                     headers: {
                         'Authorization': `Bearer ${currentToken}`,
                         'Content-Type': 'application/json'

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware'; // 1. Importar persist
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export interface Message {
     role: 'ai' | 'user' | 'system';
@@ -33,7 +34,7 @@ export const useGameStore = create<GameState>()(
             fetchGames: async (token: string) => {
                 try {
                     // Nota: Asegúrate de que el endpoint sea /api/games o /api/partidas según tu backend
-                    const res = await fetch('http://localhost:5000/api/games', {
+                    const res = await fetch(`${API_URL}/api/games`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (res.ok) {
