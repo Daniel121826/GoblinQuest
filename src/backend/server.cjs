@@ -9,8 +9,22 @@ const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.AI_KEY }); 
 
 const app = express();
+const allowedOrigins = [
+  'https://goblinquest.netlify.app', // Tu web en producción
+  'http://localhost:4173',           // Tu modo preview de Vite
+  'http://localhost:5173'            // Tu modo dev de Vite
+];
+
 app.use(cors({
-  origin: 'https://goblinquest.netlify.app', // <--- LA URL QUE TE DIO NETLIFY
+  origin: function (origin, callback) {
+    // Permitir peticiones sin origen (como aplicaciones móviles o Postman) 
+    // o si el origen está en la lista blanca
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Bloqueado por CORS: Este origen no está permitido'));
+    }
+  },
   credentials: true
 }));
 // Aumentamos el límite para permitir las imágenes en Base64
