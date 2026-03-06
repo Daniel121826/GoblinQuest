@@ -3,12 +3,44 @@ import Navbar from '../components/Navbar';
 
 const Contact: React.FC = () => {
     const [status, setStatus] = useState<string | null>(null);
+    const [formData, setFormData] = useState({
+        nombre: '',
+        email: '',
+        asunto: 'Soporte Técnico',
+        mensaje: ''
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Aquí iría la lógica de envío. Por ahora, simulamos éxito.
-        setStatus("¡Mensaje enviado con éxito, viajero!");
-        setTimeout(() => setStatus(null), 5000);
+
+        // Función para codificar los datos para Netlify
+        const encode = (data: any) => {
+            return Object.keys(data)
+                .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(data[key]))
+                .join("&");
+        };
+
+        fetch("/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: encode({ "form-name": "contacto-gremio", ...formData })
+        })
+            .then(() => {
+                setStatus("¡Mensaje enviado con éxito, viajero!");
+                setFormData({ nombre: '', email: '', asunto: 'Soporte Técnico', mensaje: '' });
+                setTimeout(() => setStatus(null), 5000);
+            })
+            .catch(error => {
+                console.error(error);
+                setStatus("Hubo un error al enviar el pergamino.");
+            });
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
     };
 
     return (
@@ -34,13 +66,25 @@ const Contact: React.FC = () => {
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-8">
+                        <form
+                            onSubmit={handleSubmit}
+                            name="contacto-gremio"
+                            method="POST"
+                            data-netlify="true"
+                            className="space-y-8"
+                        >
+                            {/* Input oculto para Netlify */}
+                            <input type="hidden" name="form-name" value="contacto-gremio" />
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Nombre de Aventurero</label>
                                     <input
                                         required
                                         type="text"
+                                        name="nombre"
+                                        value={formData.nombre}
+                                        onChange={handleChange}
                                         className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-4 focus:border-green-600 outline-none font-bold transition-all"
                                         placeholder="Ej: Valerius"
                                     />
@@ -50,6 +94,9 @@ const Contact: React.FC = () => {
                                     <input
                                         required
                                         type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
                                         className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-4 focus:border-green-600 outline-none font-bold transition-all"
                                         placeholder="heroe@reino.com"
                                     />
@@ -58,11 +105,16 @@ const Contact: React.FC = () => {
 
                             <div>
                                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Asunto del Pergamino</label>
-                                <select className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-4 focus:border-green-600 outline-none font-bold transition-all appearance-none">
-                                    <option>Soporte Técnico</option>
-                                    <option>Sugerencia de Nueva Raza</option>
-                                    <option>Reportar un Bug Arcano</option>
-                                    <option>Otro</option>
+                                <select
+                                    name="asunto"
+                                    value={formData.asunto}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-4 focus:border-green-600 outline-none font-bold transition-all appearance-none"
+                                >
+                                    <option value="Soporte Técnico">Soporte Técnico</option>
+                                    <option value="Sugerencia de Nueva Raza">Sugerencia de Nueva Raza</option>
+                                    <option value="Reportar un Bug Arcano">Reportar un Bug Arcano</option>
+                                    <option value="Otro">Otro</option>
                                 </select>
                             </div>
 
@@ -70,6 +122,9 @@ const Contact: React.FC = () => {
                                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Tu Mensaje</label>
                                 <textarea
                                     required
+                                    name="mensaje"
+                                    value={formData.mensaje}
+                                    onChange={handleChange}
                                     rows={5}
                                     className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-4 focus:border-green-600 outline-none font-bold transition-all resize-none"
                                     placeholder="Escribe aquí tus palabras..."
