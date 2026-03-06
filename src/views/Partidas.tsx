@@ -14,18 +14,21 @@ const Partidas: React.FC = () => {
 
     const token = useAuthStore((state) => state.token);
 
-
-
     useEffect(() => {
         const loadData = async () => {
-            // 1. Extraer el token del objeto complejo de Zustand
+            // 1. Limpieza de seguridad: evitamos mostrar datos de sesiones anteriores
+            setCharacters([]);
+            setSelectedCharId('');
+            setLoading(true);
+
+            // 2. Extraer el token del objeto complejo de Zustand
             const authData = localStorage.getItem('auth-storage');
             let currentToken = null;
 
             if (authData) {
                 try {
                     const parsed = JSON.parse(authData);
-                    currentToken = parsed.state?.token; // Aquí es donde vive según tu AuthState
+                    currentToken = parsed.state?.token;
                 } catch (e) {
                     console.error("Error al leer el storage de auth", e);
                 }
@@ -37,7 +40,6 @@ const Partidas: React.FC = () => {
                 return;
             }
 
-            setLoading(true);
             try {
                 const response = await fetch(`${API_URL}/api/characters`, {
                     method: 'GET',
@@ -50,8 +52,9 @@ const Partidas: React.FC = () => {
                 if (response.ok) {
                     const data = await response.json();
                     console.log("✅ Personajes recibidos:", data);
-                    setCharacters(data);
 
+                    // Actualizamos estados con la nueva información
+                    setCharacters(data);
                     await fetchGames(currentToken);
 
                     // Si hay personajes, seleccionamos el primero por defecto
@@ -70,8 +73,8 @@ const Partidas: React.FC = () => {
 
         loadData();
     }, [token]);
+
     const handleStartGame = async () => {
-        // 1. Extraer el token correctamente del store persistido
         const authData = localStorage.getItem('auth-storage');
         let currentToken = null;
 
@@ -91,7 +94,6 @@ const Partidas: React.FC = () => {
             return;
         }
 
-        // 2. Preparar los datos de la partida
         const gameData = {
             charId: char._id,
             charName: char.name,
@@ -104,7 +106,7 @@ const Partidas: React.FC = () => {
         };
 
         try {
-            setLoading(true); // Reutilizamos el estado de carga para el feedback del botón
+            setLoading(true);
             const response = await fetch(`${API_URL}/api/games`, {
                 method: 'POST',
                 headers: {
@@ -116,10 +118,7 @@ const Partidas: React.FC = () => {
 
             if (response.ok) {
                 const newGame = await response.json();
-
-                // 3. Actualizar el store local de juegos y navegar
                 if (addGame) addGame(newGame);
-
                 console.log("✅ Partida creada con éxito:", newGame._id);
                 navigate(`/partida/${newGame._id}`);
             } else {
@@ -133,11 +132,10 @@ const Partidas: React.FC = () => {
             setLoading(false);
         }
     };
+
     const handleDelete = async (gameId: string) => {
-        // 1. Confirmación del usuario
         if (!window.confirm("¿Estás seguro de que quieres borrar esta partida para siempre?")) return;
 
-        // 2. Obtener el token (mismo método que usas en loadData)
         const authData = localStorage.getItem('auth-storage');
         let currentToken = null;
         if (authData) {
@@ -147,7 +145,6 @@ const Partidas: React.FC = () => {
         if (!currentToken) return;
 
         try {
-            // 3. Llamada al Backend
             const response = await fetch(`${API_URL}/api/games/${gameId}`, {
                 method: 'DELETE',
                 headers: {
@@ -156,7 +153,6 @@ const Partidas: React.FC = () => {
             });
 
             if (response.ok) {
-                // 4. Si el servidor responde OK, borramos del Store local (Zustand)
                 deleteGame(gameId);
                 console.log("✅ Partida borrada de la DB");
             } else {
@@ -198,7 +194,7 @@ const Partidas: React.FC = () => {
                             disabled={!selectedCharId || loading}
                             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 h-[60px]"
                         >
-                            {loading ? "Cargando..." : "Comenzar Partida"}
+                            {loading ? "Invocando..." : "Comenzar Partida"}
                         </button>
                     </div>
                 </section>
@@ -206,23 +202,29 @@ const Partidas: React.FC = () => {
                 <section>
                     <h2 className="text-2xl font-black uppercase mb-6 ml-2 text-slate-800">Tus Crónicas Pasadas</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {games.length > 0 ? games.map((game: any) => (
-                            <div key={game._id} className="bg-white rounded-[2rem] p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-xl transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 border-2 border-green-600">
-                                        <img src={game.charImage || ''} className="w-full h-full object-cover" alt="Char" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-black uppercase text-slate-900">{game.charName}</h3>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">❤️ {game.health}%</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => navigate(`/partida/${game._id}`)} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-black transition-colors">Continuar</button>
-                                    <button onClick={() => handleDelete(game._id)} className="bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-500 hover:text-white transition-all">Borrar</button>
-                                </div>
+                        {loading ? (
+                            <div className="col-span-full text-center py-20 animate-pulse font-bold uppercase tracking-widest text-green-600">
+                                📜 Abriendo los archivos del gremio...
                             </div>
-                        )) : (
+                        ) : games.length > 0 ? (
+                            games.map((game: any) => (
+                                <div key={game._id} className="bg-white rounded-[2rem] p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-xl transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 border-2 border-green-600">
+                                            <img src={game.charImage || ''} className="w-full h-full object-cover" alt="Char" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black uppercase text-slate-900">{game.charName}</h3>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">❤️ {game.health}%</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => navigate(`/partida/${game._id}`)} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-black transition-colors">Continuar</button>
+                                        <button onClick={() => handleDelete(game._id)} className="bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-500 hover:text-white transition-all">Borrar</button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
                             <div className="col-span-full text-center py-20 opacity-30 font-bold uppercase tracking-widest">No hay crónicas escritas aún</div>
                         )}
                     </div>
