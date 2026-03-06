@@ -255,7 +255,7 @@ const GameRoom: React.FC = () => {
         <div className="h-screen flex flex-col bg-[#0a1a0f] overflow-hidden">
             <Navbar />
 
-            {/* Botón flotante - Movido a la IZQUIERDA (left-6) */}
+            {/* Botón flotante para móvil - Movido a la izquierda (left-6) */}
             <button
                 onClick={() => setShowSidebar(!showSidebar)}
                 className="md:hidden fixed bottom-24 right-6 z-[60] bg-green-600 text-white p-4 rounded-full shadow-2xl border-2 border-green-400 active:scale-95 transition-all"
@@ -265,13 +265,13 @@ const GameRoom: React.FC = () => {
 
             <div className="flex-1 flex overflow-hidden relative">
 
-                {/* SIDEBAR - Ajustado para que no se meta bajo el Navbar */}
+                {/* SIDEBAR - Corregido para móvil: absolute inset-0 evita que se suba al navbar */}
                 <aside className={`
-                ${showSidebar ? 'translate-x-0' : '-translate-x-full'} 
-                md:translate-x-0 md:static absolute inset-0 z-50 w-full md:w-1/3 
-                bg-[#0d2114] border-r border-green-900/30 overflow-y-auto p-8 text-white 
-                custom-scrollbar transition-transform duration-300 ease-in-out
-            `}>
+                    ${showSidebar ? 'translate-x-0' : '-translate-x-full'} 
+                    md:translate-x-0 md:static absolute inset-0 z-50 w-full md:w-1/3 
+                    bg-[#0d2114] border-r border-green-900/30 overflow-y-auto p-8 text-white 
+                    custom-scrollbar transition-transform duration-300 ease-in-out
+                `}>
                     <div className="relative w-36 h-36 mx-auto mb-6">
                         <img src={character.image} className="w-full h-full object-cover rounded-[2rem] border-2 border-green-600 shadow-2xl" alt="Hero" />
                     </div>
@@ -279,7 +279,6 @@ const GameRoom: React.FC = () => {
                     <h2 className="text-2xl font-black uppercase text-center leading-none mb-1">{character.name}</h2>
                     <p className="text-center text-green-500 font-bold uppercase text-[8px] tracking-[0.3em] mb-6">{character.race} {character.charClass}</p>
 
-                    {/* Barra de Vida */}
                     <div className="mb-8">
                         <div className="flex justify-between text-[9px] font-black uppercase mb-2">
                             <span>Vitalidad</span>
@@ -290,7 +289,6 @@ const GameRoom: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Atributos */}
                     <div className="grid grid-cols-3 gap-2 mb-4">
                         {Object.entries(character.attributes).map(([attr, val]: any) => {
                             const total = val + (RACE_BONUSES[character.race]?.[attr] || 0);
@@ -303,7 +301,6 @@ const GameRoom: React.FC = () => {
                         })}
                     </div>
 
-                    {/* Pericias */}
                     <div className="mb-6">
                         <button onClick={() => setShowSkills(!showSkills)} className="w-full bg-green-950/30 border border-green-900/40 p-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-green-900/40 transition-all flex justify-between items-center">
                             <span>⚔️ Pericias</span>
@@ -349,8 +346,7 @@ const GameRoom: React.FC = () => {
                     </div>
                 </aside>
 
-                {/* CHAT SECTION */}
-                <section className="flex-1 flex flex-col bg-gray-50 z-10 w-full">
+                <section className="flex-1 flex flex-col bg-gray-50 w-full">
                     <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 md:p-10 space-y-6">
                         {game.messages.map((m, i) => (
                             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -362,17 +358,38 @@ const GameRoom: React.FC = () => {
                         {isTyping && <div className="text-[10px] font-black text-green-600 animate-pulse ml-2">NARRANDO...</div>}
                     </div>
 
-                    {/* Input y Dado */}
+                    {/* Mensaje de Error de Quota (Mantenido) */}
+                    {quotaError && (
+                        <div className="p-4 md:p-6 bg-white border-t border-gray-100">
+                            <div className="max-w-2xl mx-auto p-6 rounded-[1.5rem] bg-amber-50 border-2 border-amber-200 text-amber-900 shadow-md">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-2xl">⏳</span>
+                                    <h4 className="font-black uppercase text-xs tracking-tighter">Aviso del Master</h4>
+                                </div>
+                                <p className="text-sm italic leading-relaxed">
+                                    "Las brumas del destino se han vuelto demasiado densas para ver con claridad...
+                                    <strong> Debes tomarte un descanso</strong>."
+                                </p>
+                                <button
+                                    onClick={() => setQuotaError(false)}
+                                    className="mt-4 text-[10px] font-bold uppercase text-amber-700 hover:underline"
+                                >
+                                    Entendido, esperaré.
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="p-4 md:p-6 bg-white border-t border-gray-100">
                         <div className="flex gap-3 md:gap-4 items-center max-w-6xl mx-auto">
                             <button
                                 onClick={() => handleSend(`Lanzamiento d20: ${Math.floor(Math.random() * 20) + 1}`)}
-                                className="group relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center active:scale-90 transition-all duration-500 ease-out"
+                                className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center active:scale-90 transition-transform"
                             >
-                                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-lg transition-all duration-500 group-hover:rotate-[360deg] group-hover:drop-shadow-[0_0_15px_rgba(34,197,94,0.6)]">
-                                    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="#0f172a" stroke="#22c55e" strokeWidth="3" className="group-hover:fill-[#1a2e4b] transition-colors" />
+                                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-lg">
+                                    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="#0f172a" stroke="#22c55e" strokeWidth="3" />
                                 </svg>
-                                <span className="relative z-10 text-green-500 font-black italic text-lg md:text-xl group-hover:scale-110 transition-transform">20</span>
+                                <span className="relative z-10 text-green-500 font-black italic text-lg md:text-xl">20</span>
                             </button>
 
                             <input
@@ -380,7 +397,7 @@ const GameRoom: React.FC = () => {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                placeholder="¿Qué quieres hacer?"
+                                placeholder="Escribe tu acción..."
                                 className="flex-1 bg-gray-100 rounded-xl px-4 md:px-5 h-12 text-sm outline-none focus:ring-2 ring-green-500/20 transition-all"
                             />
                             <button onClick={() => handleSend()} className="bg-green-600 text-white px-4 md:px-8 h-12 rounded-xl text-xs font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-600/20">
