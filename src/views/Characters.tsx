@@ -18,18 +18,25 @@ interface Character {
 const Characters: React.FC = () => {
     const navigate = useNavigate();
     const [characters, setCharacters] = useState<Character[]>([]);
-    const token = useAuthStore((state) => state.token); // Añadir esto
+    const [isLoading, setIsLoading] = useState(true); // Estado de carga inicial
+    const token = useAuthStore((state) => state.token);
 
     useEffect(() => {
         const fetchCharacters = async () => {
             if (!token) return;
-            const response = await fetch(`${API_URL}/api/characters`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                // Ajuste para mapear _id de MongoDB a id de la interfaz
-                setCharacters(data.map((c: any) => ({ ...c, id: c._id })));
+            setIsLoading(true);
+            try {
+                const response = await fetch(`${API_URL}/api/characters`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setCharacters(data.map((c: any) => ({ ...c, id: c._id })));
+                }
+            } catch (error) {
+                console.error("Error al invocar las leyendas:", error);
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchCharacters();
@@ -67,8 +74,13 @@ const Characters: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Lista de Cards */}
-                {characters.length === 0 ? (
+                {/* Lógica de Renderizado: Cargando -> Lista -> Vacío */}
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-24">
+                        <div className="w-12 h-12 border-4 border-green-900 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-slate-900 font-black uppercase tracking-[0.2em] animate-pulse">Cargando leyendas...</p>
+                    </div>
+                ) : characters.length === 0 ? (
                     <div className="col-span-full py-24 text-center border-4 border-dashed border-gray-200 rounded-[3rem] bg-white/50">
                         <p className="text-slate-400 font-bold uppercase tracking-widest mb-4">No hay leyendas aún</p>
                         <button onClick={() => navigate('/crear-personaje')} className="text-green-600 font-black uppercase text-sm hover:underline">
