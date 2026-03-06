@@ -14,6 +14,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false); // Estado para el feedback de carga
 
     const login = useAuthStore((state) => state.login);
 
@@ -23,7 +24,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
     if (!isOpen) return null;
 
-    // --- CAMBIO AQUÍ: Función asíncrona conectada al Backend ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -36,31 +36,38 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             ? `${API_URL}/api/auth/login`
             : `${API_URL}/api/auth/register`;
 
+        setLoading(true); // Iniciamos la carga
+
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, username }) // username se ignora en login por el server
+                body: JSON.stringify({ email, password, username })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
                 alert(data.error || "Error en la conexión arcana");
+                setLoading(false);
                 return;
             }
 
             if (isLogin) {
-                // data.username es el que acabamos de configurar en el server
+                // LOGIN NORMAL
                 login({ name: data.username }, data.token);
                 onClose();
             } else {
-                // Si es registro, lo movemos a login para que entre
-                alert("Registro exitoso. ¡Inicia sesión, aventurero!");
-                setIsLogin(true);
+                // REGISTRO CON LOGIN AUTOMÁTICO
+                // Al registrarse, el server devuelve el token y el usuario
+                login({ name: data.username }, data.token);
+                console.log("✅ Registro y Login automático exitoso");
+                onClose();
             }
         } catch (error) {
-            alert("No se pudo contactar con el servidor. Revisa si está encendido.");
+            alert("No se pudo contactar con el servidor. El Reino está despertando (puede tardar 30s).");
+        } finally {
+            setLoading(false); // Finalizamos la carga
         }
     };
 
@@ -132,16 +139,31 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                         </div>
                     )}
 
-                    <button type="submit" className="w-full bg-[#1e5a31] hover:bg-green-700 text-white font-bold py-4 rounded-xl mt-4 transition-all uppercase tracking-widest text-xs shadow-lg active:scale-95">
-                        {isLogin ? 'Entrar al Reino' : 'Crear Cuenta'}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-[#1e5a31] hover:bg-green-700 disabled:bg-green-900/40 disabled:text-green-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl mt-4 transition-all uppercase tracking-widest text-xs shadow-lg active:scale-95 flex items-center justify-center gap-3"
+                    >
+                        {loading ? (
+                            <>
+                                <svg className="animate-spin h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Procesando...
+                            </>
+                        ) : (
+                            isLogin ? 'Entrar al Reino' : 'Crear Cuenta'
+                        )}
                     </button>
                 </form>
 
                 <div className="mt-6 text-center">
                     <button
                         type="button"
+                        disabled={loading}
                         onClick={() => setIsLogin(!isLogin)}
-                        className="text-green-200/50 hover:text-green-400 text-[10px] uppercase tracking-widest transition-colors underline decoration-green-900 underline-offset-4"
+                        className="text-green-200/50 hover:text-green-400 text-[10px] uppercase tracking-widest transition-colors underline decoration-green-900 underline-offset-4 disabled:opacity-30"
                     >
                         {isLogin ? '¿Eres nuevo aquí? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
                     </button>
