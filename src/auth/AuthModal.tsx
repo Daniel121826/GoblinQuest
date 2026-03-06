@@ -14,7 +14,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [loading, setLoading] = useState(false); // Estado para el feedback de carga
+    const [loading, setLoading] = useState(false);
 
     const login = useAuthStore((state) => state.login);
 
@@ -36,7 +36,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             ? `${API_URL}/api/auth/login`
             : `${API_URL}/api/auth/register`;
 
-        setLoading(true); // Iniciamos la carga
+        setLoading(true);
 
         try {
             const response = await fetch(url, {
@@ -53,21 +53,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 return;
             }
 
+            // --- LÓGICA DE LOGIN AUTOMÁTICO CORREGIDA ---
             if (isLogin) {
-                // LOGIN NORMAL
+                // En Login usamos lo que diga el servidor (data.username)
                 login({ name: data.username }, data.token);
-                onClose();
             } else {
-                // REGISTRO CON LOGIN AUTOMÁTICO
-                // Al registrarse, el server devuelve el token y el usuario
-                login({ name: data.username }, data.token);
-                console.log("✅ Registro y Login automático exitoso");
-                onClose();
+                // En Registro: 
+                // Intentamos sacar el nombre de data.username o data.user.username
+                // Si el server no lo envía, usamos el 'username' del estado del formulario
+                const finalName = data.username || (data.user && data.user.username) || username;
+
+                login({ name: finalName }, data.token);
+                console.log("✅ Registro exitoso para:", finalName);
             }
+
+            onClose();
         } catch (error) {
             alert("No se pudo contactar con el servidor. El Reino está despertando (puede tardar 30s).");
         } finally {
-            setLoading(false); // Finalizamos la carga
+            setLoading(false);
         }
     };
 
