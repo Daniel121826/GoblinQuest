@@ -153,7 +153,7 @@ app.put('/api/characters/:id', authenticate, async (req, res) => {
         const updated = await Character.findOneAndUpdate(
             { _id: req.params.id, userId: req.userId },
             req.body,
-            { new: true }
+            { returnDocument: 'after' }
         );
         res.json(updated);
     } catch (error) {
@@ -243,7 +243,7 @@ app.put('/api/games/:id', authenticate, async (req, res) => {
         const updated = await Game.findOneAndUpdate(
             { _id: req.params.id, userId: req.userId },
             req.body,
-            { new: true }
+            { returnDocument: 'after' }
         );
         res.json(updated);
     } catch (error) {
