@@ -68,6 +68,7 @@ const GameRoom: React.FC = () => {
     const callAI = async (messagesForAI: Message[], isInitial = false) => {
         if (!character || !game) return;
         setIsTyping(true);
+        const limitedMessages = messagesForAI.slice(-10);
 
         const modsFinales = Object.keys(character.attributes).reduce((acc: any, attr: string) => {
             const totalPuntuacion = character.attributes[attr] + (RACE_BONUSES[character.race]?.[attr] || 0);
@@ -103,7 +104,12 @@ const GameRoom: React.FC = () => {
                     ESTADO:
                     - Salud: ${game.health}%
                     - Inventario: ${JSON.stringify(game.inventory)}
-                    - Misiones: ${JSON.stringify(game.missions)}
+                    - Misiones y Logros: ${JSON.stringify(game.missions)}
+
+                    INSTRUCCIONES DE MEMORIA(CRÍTICO):
+                        1. Tu memoria de mensajes es corta(solo 10 mensajes). 
+                        2. Usa el array "misiones" como tu MEMORIA A LARGO PLAZO.
+                        3. Si una misión se completa, marcala como [COMPLETADA] en el array de misiones.
 
                     REGLAS DE TIRADAS:
                     1. Cuando el jugador mande un "Lanzamiento d20: X", debes identificar qué Atributo o Pericia aplica a la acción.
@@ -112,13 +118,13 @@ const GameRoom: React.FC = () => {
                     4 . Responde SIEMPRE en JSON:
                     {
                       "narracion": "Tu relato",
-                      "misiones": [],
+                      "misiones": ["Nueva misión: Ir al bosque", "[COMPLETADA] Matar al dragón"],
                       "inventario": [],
                       "nueva_salud": ${game.health},
                       "tirada_pedida": false
                     }`
                 },
-                ...messagesForAI.map(m => ({
+                ...limitedMessages.map(m => ({
                     role: m.role === 'ai' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
                     content: m.content
                 }))
@@ -136,6 +142,16 @@ const GameRoom: React.FC = () => {
             if (response.status === 429 || response.status === 500) {
                 setQuotaError(true);
                 setIsTyping(false);
+                // --- NUEVA LÓGICA: AGOTAR ENERGÍA ---
+                const exhaustedGameData = {
+                    ...game,
+                    energy: 0, // Vaciamos la barra
+                    lastRegenTime: new Date() // El reloj empieza a contar desde ahora
+                };
+
+                updateGame(exhaustedGameData); // Actualiza la barra azul visualmente
+                saveGameToDB(exhaustedGameData); // Lo guarda en MongoDB para que no pueda saltárselo recargando
+
                 return; // Salimos de la función para no intentar procesar el JSON
             }
             const data = await response.json();
@@ -148,6 +164,8 @@ const GameRoom: React.FC = () => {
             const updatedGameData = {
                 ...game,
                 health: data.nueva_salud ?? game.health,
+                energy: Math.max(0, (game.energy ?? 30) - 1), // Resta 1 mensaje
+                lastRegenTime: new Date(), // Marcamos que acaba de gastar energía
                 missions: data.misiones ?? game.missions,
                 inventory: data.inventario ?? game.inventory,
                 messages: updatedHistory
@@ -173,8 +191,33 @@ const GameRoom: React.FC = () => {
             setIsTyping(false);
         }
     };
+    const saveGameToDB = async (updatedData: any) => {
+        const token = getToken();
+        if (!token || !gameId) return;
+
+        try {
+            await fetch(`${API_URL}/api/games/${gameId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(updatedData)
+            });
+        } catch (error) {
+            console.error("Error al guardar energía en DB:", error);
+        }
+    };
 
     const handleSend = async (customText?: string) => {
+        // 1. Verificamos si tiene energía (o si es un comando de sistema)
+        const currentEnergy = game?.energy ?? 30;
+
+        if (currentEnergy <= 0 && !customText?.includes("Inicia la partida")) {
+            setQuotaError(true); // Muestra el mensaje de "vuelve en un rato"
+            return;
+        }
+
         const text = customText || input;
         if (!text.trim() || isTyping || !game) return;
 
@@ -184,6 +227,38 @@ const GameRoom: React.FC = () => {
         await callAI([...game.messages, userMessage]);
     };
 
+    const refreshEnergy = () => {
+        // IMPORTANTE: Buscamos el juego actualizado directamente del array de games
+        // para no usar una copia vieja de la variable 'game'
+        const currentGame = games.find(g => g._id === gameId);
+        if (!currentGame) return;
+
+        const now = new Date().getTime();
+        const lastUpdate = new Date(currentGame.lastRegenTime || now).getTime();
+
+        // 900000 = 15 minutos
+        const msPerPoint = 900000;
+        const pointsToRecover = Math.floor((now - lastUpdate) / msPerPoint);
+
+        if (pointsToRecover > 0 && currentGame.energy < 30) {
+            const newEnergy = Math.min(30, currentGame.energy + pointsToRecover);
+
+            if (newEnergy !== currentGame.energy) {
+                const updatedGame = {
+                    ...currentGame,
+                    energy: newEnergy,
+                    // Ajustamos el tiempo para que no "regale" milisegundos
+                    lastRegenTime: new Date(lastUpdate + (pointsToRecover * msPerPoint))
+                };
+
+                // Esto actualiza el Store de Zustand y, por lo tanto, la UI
+                updateGame(updatedGame);
+
+                // Esto lo guarda en la base de datos en segundo plano
+                saveGameToDB(updatedGame);
+            }
+        }
+    };
     // --- EFECTOS ---
     useEffect(() => {
         const fetchChar = async () => {
@@ -216,6 +291,31 @@ const GameRoom: React.FC = () => {
 
         fetchChar();
     }, [game?.charId]);
+
+    useEffect(() => {
+        // Si no hay juego o la energía ya está al máximo, no hacemos nada
+        if (!game || game.energy >= 30) return;
+
+        const interval = setInterval(() => {
+            // Llamamos a la función que ya tienes
+            refreshEnergy();
+        }, 5000); // Revisar cada 5 segundos para que sea fluido
+
+        return () => clearInterval(interval);
+    }, [game?.energy, game?.lastRegenTime]); // Se reinicia si cambia la energía o el tiempo
+
+    useEffect(() => {
+        if (game && game.energy === undefined) {
+            console.log("Partida antigua detectada. Inicializando energía...");
+            const repairedGame = {
+                ...game,
+                energy: 30,
+                lastRegenTime: new Date()
+            };
+            saveGameToDB(repairedGame);
+            updateGame(repairedGame);
+        }
+    }, [game?.energy]);
 
     useEffect(() => {
         if (game && character && !hasStarted.current) {
@@ -258,7 +358,7 @@ const GameRoom: React.FC = () => {
             {/* Botón flotante para móvil - Movido a la izquierda (left-6) */}
             <button
                 onClick={() => setShowSidebar(!showSidebar)}
-                className="md:hidden fixed bottom-24 left-6 z-[60] bg-green-600 text-white p-4 rounded-full shadow-2xl border-2 border-green-400 active:scale-95 transition-all"
+                className="md:hidden fixed bottom-24 right-6 z-[60] bg-green-600 text-white p-4 rounded-full shadow-2xl border-2 border-green-400 active:scale-95 transition-all"
             >
                 {showSidebar ? '✕' : '👤'}
             </button>
@@ -279,7 +379,7 @@ const GameRoom: React.FC = () => {
                     <h2 className="text-2xl font-black uppercase text-center leading-none mb-1">{character.name}</h2>
                     <p className="text-center text-green-500 font-bold uppercase text-[8px] tracking-[0.3em] mb-6">{character.race} {character.charClass}</p>
 
-                    <div className="mb-8">
+                    <div className="mb-4">
                         <div className="flex justify-between text-[9px] font-black uppercase mb-2">
                             <span>Vitalidad</span>
                             <span className={game.health < 25 ? "text-red-500 animate-pulse" : "text-red-400"}>{game.health}%</span>
@@ -287,6 +387,26 @@ const GameRoom: React.FC = () => {
                         <div className="h-2.5 bg-gray-900 rounded-full overflow-hidden border border-red-900/40">
                             <div className="h-full bg-red-600 transition-all duration-700 shadow-[0_0_10px_rgba(220,38,38,0.5)]" style={{ width: `${game.health}%` }}></div>
                         </div>
+                    </div>
+                    {/* --- BARRA DE ENERGÍA --- */}
+                    <div className="mb-4">
+                        <div className="flex justify-between text-[9px] font-black uppercase mb-2 text-white">
+                            <span>Energía</span>
+                            {/* Usamos (game.energy ?? 30) para evitar el NaN */}
+                            <span className={(game.energy ?? 30) < 5 ? "text-blue-500 animate-pulse" : "text-blue-400"}>
+                                {game.energy ?? 30} / 30
+                            </span>
+                        </div>
+                        <div className="h-2.5 bg-gray-900 rounded-full overflow-hidden border border-blue-900/40">
+                            <div
+                                className="h-full bg-blue-500 transition-all duration-700 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                // Protección matemática: (valor / total) * 100
+                                style={{ width: `${((game.energy ?? 30) / 30) * 100}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-[9px] text-blue-400/50 mt-1 uppercase tracking-tighter">
+                            {game.energy < 30 ? "Recuperando energia..." : "Energía al máximo"}
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 mb-4">
@@ -323,14 +443,38 @@ const GameRoom: React.FC = () => {
 
                     <div className="space-y-4">
                         <div className="bg-black/30 rounded-2xl p-4 border border-green-900/20">
-                            <h3 className="text-[9px] font-black uppercase tracking-widest text-green-500 mb-3">📜 Misiones</h3>
-                            <ul className="space-y-2 text-[11px] text-gray-300">
-                                {(game.missions || []).map((m: any, i: number) => (
-                                    <li key={i} className="flex gap-2">
-                                        <span className="text-green-600">»</span>
-                                        {typeof m === 'object' ? (m.nombre || m.descripcion) : m}
-                                    </li>
-                                ))}
+                            <h3 className="text-[9px] font-black uppercase tracking-widest text-green-500 mb-3">📜 Diario de Aventuras</h3>
+                            <ul className="space-y-3 text-[11px]">
+                                {(game.missions || []).map((m: any, i: number) => {
+                                    // 1. Extraemos el texto base sea objeto o string
+                                    const rawText = typeof m === 'object' ? (m.nombre || m.descripcion) : m;
+
+                                    // 2. Comprobamos si la IA lo marcó como completado
+                                    const isCompleted = rawText.includes('[COMPLETADA]');
+
+                                    // 3. Limpiamos el tag para que el usuario no vea el código "["
+                                    const cleanText = rawText.replace('[COMPLETADA]', '').trim();
+
+                                    return (
+                                        <li key={i} className={`flex gap-2 transition-all duration-500 ${isCompleted ? 'opacity-40' : 'opacity-100'}`}>
+                                            <span className={isCompleted ? "text-gray-500" : "text-green-600"}>
+                                                {isCompleted ? '✓' : '»'}
+                                            </span>
+
+                                            <div className="flex flex-col">
+                                                <span className={`${isCompleted ? 'line-through text-gray-500 italic' : 'text-gray-300 font-medium'}`}>
+                                                    {cleanText}
+                                                </span>
+
+                                                {isCompleted && (
+                                                    <span className="text-[7px] text-green-500/70 font-black uppercase tracking-tighter">
+                                                        Misión Completada
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                         <div className="bg-black/30 rounded-2xl p-4 border border-green-900/20">
@@ -385,9 +529,10 @@ const GameRoom: React.FC = () => {
                         <div className="flex gap-3 md:gap-4 items-center max-w-6xl mx-auto">
                             <button
                                 onClick={() => handleSend(`Lanzamiento d20: ${Math.floor(Math.random() * 20) + 1}`)}
-                                className="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center 
-               group transition-all duration-300 ease-out
-               hover:scale-110 active:scale-90"
+                                disabled={game.energy <= 0 || isTyping} // <-- AÑADIR ESTO
+                                className={`relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center 
+    group transition-all duration-300 ease-out
+    ${(game.energy <= 0 || isTyping) ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 active:scale-90'}`} // <-- CAMBIO EN CLASES
                             >
                                 {/* Efecto de resplandor de fondo al hacer hover */}
                                 <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full 
@@ -416,12 +561,21 @@ const GameRoom: React.FC = () => {
                             <input
                                 type="text"
                                 value={input}
+                                disabled={game.energy <= 0 || isTyping}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                placeholder="Escribe tu acción..."
-                                className="flex-1 bg-gray-100 rounded-xl px-4 md:px-5 h-12 text-sm outline-none focus:ring-2 ring-green-500/20 transition-all"
+                                placeholder={game.energy <= 0 ? "Sin energía..." : "Escribe tu acción..."} // <-- OPCIONAL: Cambiar placeholder
+                                className={`flex-1 bg-gray-100 rounded-xl px-4 md:px-5 h-12 text-sm outline-none transition-all 
+    ${(game.energy <= 0 || isTyping) ? 'opacity-50 cursor-not-allowed' : 'focus:ring-2 ring-green-500/20'}`}
                             />
-                            <button onClick={() => handleSend()} className="bg-green-600 text-white px-4 md:px-8 h-12 rounded-xl text-xs font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-600/20">
+                            <button
+                                onClick={() => handleSend()}
+                                disabled={game.energy <= 0 || isTyping} // <-- AÑADIR ESTO
+                                className={`px-4 md:px-8 h-12 rounded-xl text-xs font-black uppercase transition-all shadow-lg 
+    ${(game.energy <= 0 || isTyping)
+                                        ? 'bg-gray-400 cursor-not-allowed shadow-none'
+                                        : 'bg-green-600 text-white hover:bg-green-700 shadow-green-600/20'}`}
+                            >
                                 <span className="hidden md:inline">Enviar</span>
                                 <span className="md:hidden">➤</span>
                             </button>

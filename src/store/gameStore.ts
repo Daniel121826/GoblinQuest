@@ -14,6 +14,7 @@ export interface Game {
     charImage: string | null;
     health: number;
     energy: number;
+    lastRegenTime: Date;
     messages: Message[];
     missions: string[];
     date: string;

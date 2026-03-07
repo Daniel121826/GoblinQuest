@@ -99,6 +99,8 @@ const Partidas: React.FC = () => {
             charName: char.name,
             charImage: char.image,
             health: 100,
+            energy: 30,
+            lastRegenTime: new Date().toISOString(),
             messages: [],
             inventory: [],
             missions: [],

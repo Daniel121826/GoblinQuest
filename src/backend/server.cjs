@@ -206,6 +206,7 @@ const gameSchema = new mongoose.Schema({
     charImage: String,
     health: { type: Number, default: 100 },
     energy: { type: Number, default: 30 },
+    lastRegenTime: { type: Date, default: Date.now },
     messages: [{ role: String, content: String }],
     missions: [String],
     inventory: [String],
