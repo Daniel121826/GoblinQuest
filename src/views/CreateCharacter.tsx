@@ -372,7 +372,7 @@ const CreateCharacter: React.FC = () => {
                     <div className="p-10 bg-gray-50 border-t border-gray-100 flex justify-end">
                         <button
                             onClick={handleSave}
-                            className="bg-[black] hover:bg-black/85 text-white px-10 py-4 rounded-md transition-all transform hover:scale-105 shadow-[0_10px_20px_rgba(0,0,0,0.3)] font-bold uppercase tracking-widest text-sm font-sans"
+                            className="bg-[black/85] hover:bg-black text-white px-10 py-4 rounded-md transition-all transform hover:scale-105 shadow-[0_10px_20px_rgba(0,0,0,0.3)] font-bold uppercase tracking-widest text-sm font-sans"
                         >
                             {id ? 'Actualizar Personaje' : 'Guardar Personaje'}
                         </button>

@@ -112,10 +112,15 @@ const GameRoom: React.FC = () => {
                         3. Si una misión se completa, marcala como [COMPLETADA] en el array de misiones.
 
                     REGLAS DE TIRADAS:
-                    1. Cuando el jugador mande un "Lanzamiento d20: X", debes identificar qué Atributo o Pericia aplica a la acción.
-                    2. Debes pedir al jugador que realice una tirada de habilidad o atributo específico en funcion de la accion que quiera realizar, por ejemplo: "Tira una tirada de Destreza para esquivar el ataque".
-                    3. Suma el modificador correspondiente al valor X y narra el resultado según la dificultad (DC).
-                    4 . Responde SIEMPRE en JSON:
+                    1. El jugador enviará acciones como "Lanzamiento d20: X".
+                    2. TU TRABAJO: 
+                        a) Identifica la Pericia o Atributo.
+                        b) Busca el modificador en la HOJA DE PERSONAJE que te envié arriba.
+                        c) Realiza la suma: X + Modificador = Resultado Final.
+                    3. EJEMPLO: Si el jugador envía "Lanzamiento d20: 12" y tiene Sigilo +2, el resultado es 14.
+                    4. NUNCA apliques penalizadores arbitrarios que contradigan los modificadores de la hoja.
+                    5. En la "narracion", muestra siempre el cálculo entre paréntesis, ej: "(Sacaste 12 + 2 de Sigilo = 14)".
+                    6 . Responde SIEMPRE en JSON:
                     {
                       "narracion": "Tu relato",
                       "misiones": ["Nueva misión: Ir al bosque", "[COMPLETADA] Matar al dragón"],
