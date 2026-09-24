@@ -81,18 +81,44 @@ const authenticate = (req, res, next) => {
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages } = req.body;
-        
-        const completion = await groq.chat.completions.create({
-            messages,
-            model: "llama-3.3-70b-versatile",
-            temperature: 0.7,
-            response_format: { type: "json_object" }
-        });
 
-        res.json(JSON.parse(completion.choices[0]?.message?.content || "{}"));
+        // Lista de modelos disponibles en Groq ordenados por preferencia
+        const candidateModels = [
+            "llama-3.3-70b-versatile",
+            "llama3-70b-8192",
+            "llama3-8b-8192",
+            "mixtral-8x7b-32768"
+        ];
+
+        let completion = null;
+        let lastError = null;
+
+        // Intenta realizar la llamada recorriendo la lista de modelos de respaldo
+        for (const model of candidateModels) {
+            try {
+                completion = await groq.chat.completions.create({
+                    messages,
+                    model: model,
+                    temperature: 0.7,
+                    response_format: { type: "json_object" }
+                });
+                break; // Si la petición tiene éxito, salimos del bucle
+            } catch (err) {
+                console.warn(`⚠️ Falló el modelo ${model}, intentando con el siguiente...`);
+                lastError = err;
+            }
+        }
+
+        if (!completion) {
+            throw lastError || new Error("No se pudo conectar con ningún modelo de Groq");
+        }
+
+        const responseContent = completion.choices[0]?.message?.content || "{}";
+        res.json(JSON.parse(responseContent));
+
     } catch (error) {
-        console.error("Error en Groq:", error);
-        res.status(500).json({ error: "Error al conectar con la IA" });
+        console.error("❌ Error definitivo en Groq:", error?.message || error);
+        res.status(500).json({ error: "Error al conectar con la IA de Groq" });
     }
 });
 
