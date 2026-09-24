@@ -82,18 +82,17 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { messages } = req.body;
 
-        // Lista de modelos disponibles en Groq ordenados por preferencia
+        // Lista de modelos activos en Groq (ordenados por preferencia)
         const candidateModels = [
-            "llama-3.3-70b-versatile",
-            "llama3-70b-8192",
-            "llama3-8b-8192",
-            "mixtral-8x7b-32768"
+            "openai/gpt-oss-120b",  // Reemplazo recomendado para modelos de 70B (muy capaz)
+            "openai/gpt-oss-20b",   // Modelo ultrarrápido (~1000 tps)
+            "qwen/qwen3.8-27b"      // Excelente alternativa con soporte de JSON
         ];
 
         let completion = null;
         let lastError = null;
 
-        // Intenta realizar la llamada recorriendo la lista de modelos de respaldo
+        // Bucle de respaldo (fallback) por si algún modelo falla o se satura
         for (const model of candidateModels) {
             try {
                 completion = await groq.chat.completions.create({
@@ -102,15 +101,15 @@ app.post('/api/chat', async (req, res) => {
                     temperature: 0.7,
                     response_format: { type: "json_object" }
                 });
-                break; // Si la petición tiene éxito, salimos del bucle
+                break; // Si la llamada fue exitosa, sale del bucle
             } catch (err) {
-                console.warn(`⚠️ Falló el modelo ${model}, intentando con el siguiente...`);
+                console.warn(`⚠️ El modelo ${model} dio error (${err?.message || err}), intentando el siguiente...`);
                 lastError = err;
             }
         }
 
         if (!completion) {
-            throw lastError || new Error("No se pudo conectar con ningún modelo de Groq");
+            throw lastError || new Error("No se pudo conectar con ningún modelo activo de Groq.");
         }
 
         const responseContent = completion.choices[0]?.message?.content || "{}";
