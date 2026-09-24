@@ -84,7 +84,7 @@ app.post('/api/chat', async (req, res) => {
         
         const completion = await groq.chat.completions.create({
             messages,
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.3-70b-specdec",
             temperature: 0.7,
             response_format: { type: "json_object" }
         });
